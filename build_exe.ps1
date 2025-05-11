@@ -68,8 +68,8 @@ Remove-Item ./citation.cff -Force -ErrorAction SilentlyContinue
 # Download Multi_Agent_CLI.py from GitHub
 Write-Host "Downloading Multi_Agent_CLI.py from GitHub..."
 $multiAgentCliUrl = "https://raw.githubusercontent.com/morganross/GPT-Researcher-Multi-Agent-CLI/master/Multi_Agent_CLI.py"
-Invoke-WebRequest -Uri $multiAgentCliUrl -OutFile "Multi_Agent_CLI.py"
-Write-Host "Downloaded Multi_Agent_CLI.py from GitHub"
+Invoke-WebRequest -Uri $multiAgentCliUrl -OutFile "./gpt-researcher/Multi_Agent_CLI.py"
+Write-Host "Downloaded Multi_Agent_CLI.py to ./gpt-researcher/ from GitHub"
 
 # Determine if we're running from within the gpt-researcher directory or from a parent directory
 $scriptPath = $MyInvocation.MyCommand.Path
