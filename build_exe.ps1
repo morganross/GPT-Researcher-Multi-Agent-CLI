@@ -44,6 +44,15 @@ Write-Host "Repository directory: $($repoDir.FullName)"
 Set-Location $repoDir.FullName
 Write-Host "Changed directory to: $($repoDir.FullName)"
 
+# Determine the actual name of the gpt-researcher directory within the extracted folder
+$gptResearcherPath = ""
+if (Test-Path (Join-Path (Get-Location) "gpt_researcher")) {
+    $gptResearcherPath = "gpt_researcher"
+} elseif (Test-Path (Join-Path (Get-Location) "gpt-researcher")) {
+    $gptResearcherPath = "gpt-researcher"
+}
+Write-Host "GPT Researcher path within extracted folder: $gptResearcherPath"
+
 # Clean up build artifacts
 Remove-Item ./dist -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item ./build -Recurse -Force -ErrorAction SilentlyContinue
@@ -71,48 +80,17 @@ $multiAgentCliUrl = "https://raw.githubusercontent.com/morganross/GPT-Researcher
 Invoke-WebRequest -Uri $multiAgentCliUrl -OutFile "Multi_Agent_CLI.py"
 Write-Host "Downloaded Multi_Agent_CLI.py to ./gpt-researcher/ from GitHub"
 
-# Determine if we're running from within the gpt-researcher directory or from a parent directory
-$scriptPath = $MyInvocation.MyCommand.Path
-$scriptDir = Split-Path -Parent $scriptPath
-$scriptName = Split-Path -Leaf $scriptPath
-
-# Check if the script is being run from within the gpt-researcher directory
-# The directory structure can have either gpt_researcher or gpt-researcher
-$isInGptResearcherDir = (Test-Path (Join-Path $scriptDir "gpt_researcher")) -or (Test-Path (Join-Path $scriptDir "gpt-researcher"))
-
-# Debug output
-Write-Host "Script directory: $scriptDir"
-Write-Host "Running from within gpt-researcher directory: $isInGptResearcherDir"
-
-# Check if gpt_researcher or gpt-researcher directory exists
-$gptResearcherPath = ""
-if (Test-Path (Join-Path $scriptDir "gpt_researcher")) {
-    $gptResearcherPath = "gpt_researcher"
-} elseif (Test-Path (Join-Path $scriptDir "gpt-researcher")) {
-    $gptResearcherPath = "gpt-researcher"
-}
-
-Write-Host "GPT Researcher path: $gptResearcherPath"
 
 # Get absolute paths for PyInstaller
 $currentDir = Get-Location
 Write-Host "Current directory: $currentDir"
 
-if ($isInGptResearcherDir) {
-    # Running from within gpt-researcher directory
-    $retrieversPath = Join-Path $scriptDir "$gptResearcherPath\retrievers"
-    Write-Host "Retrievers path: $retrieversPath"
-    
-    # Use absolute paths for PyInstaller
-    python -m PyInstaller --onefile Multi_Agent_CLI.py --add-data "$retrieversPath;gpt_researcher/retrievers" --add-data "$(python -c 'import tiktoken; import os; print(os.path.dirname(tiktoken.__file__))');tiktoken" --hidden-import tiktoken --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext
-} else {
-    # Running from parent directory
-    $retrieversPath = Join-Path $currentDir "gpt-researcher\$gptResearcherPath\retrievers"
-    Write-Host "Retrievers path: $retrieversPath"
-    
-    # Use absolute paths for PyInstaller
-    python -m PyInstaller --onefile Multi_Agent_CLI.py --add-data "$retrieversPath;gpt_researcher/retrievers" --add-data "$(python -c 'import tiktoken; import os; print(os.path.dirname(tiktoken.__file__))');tiktoken" --hidden-import tiktoken --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext
-}
+# Get absolute paths for PyInstaller
+$currentDir = Get-Location
+Write-Host "Current directory: $currentDir"
+
+# Use relative path for retrievers in PyInstaller
+python -m PyInstaller --onefile Multi_Agent_CLI.py --add-data "./$gptResearcherPath/retrievers;gpt_researcher/retrievers" --add-data "$(python -c 'import tiktoken; import os; print(os.path.dirname(tiktoken.__file__))');tiktoken" --hidden-import tiktoken --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext
 
 # Note: Keeping the terminal open after the executable runs is controlled by the Python script itself,
 # not by this build script. You need to add a pause command (like input() or os.system("pause"))
