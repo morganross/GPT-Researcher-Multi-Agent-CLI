@@ -68,7 +68,7 @@ Remove-Item ./citation.cff -Force -ErrorAction SilentlyContinue
 # Download Multi_Agent_CLI.py from GitHub
 Write-Host "Downloading Multi_Agent_CLI.py from GitHub..."
 $multiAgentCliUrl = "https://raw.githubusercontent.com/morganross/GPT-Researcher-Multi-Agent-CLI/master/Multi_Agent_CLI.py"
-Invoke-WebRequest -Uri $multiAgentCliUrl -OutFile "./gpt-researcher/Multi_Agent_CLI.py"
+Invoke-WebRequest -Uri $multiAgentCliUrl -OutFile "Multi_Agent_CLI.py"
 Write-Host "Downloaded Multi_Agent_CLI.py to ./gpt-researcher/ from GitHub"
 
 # Determine if we're running from within the gpt-researcher directory or from a parent directory
@@ -111,7 +111,7 @@ if ($isInGptResearcherDir) {
     Write-Host "Retrievers path: $retrieversPath"
     
     # Use absolute paths for PyInstaller
-    python -m PyInstaller --onefile ./gpt-researcher/Multi_Agent_CLI.py --add-data "$retrieversPath;gpt_researcher/retrievers" --add-data "$(python -c 'import tiktoken; import os; print(os.path.dirname(tiktoken.__file__))');tiktoken" --hidden-import tiktoken --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext
+    python -m PyInstaller --onefile Multi_Agent_CLI.py --add-data "$retrieversPath;gpt_researcher/retrievers" --add-data "$(python -c 'import tiktoken; import os; print(os.path.dirname(tiktoken.__file__))');tiktoken" --hidden-import tiktoken --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext
 }
 
 # Note: Keeping the terminal open after the executable runs is controlled by the Python script itself,
