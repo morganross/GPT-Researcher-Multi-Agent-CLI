@@ -138,18 +138,6 @@ def load_task_config(args):
             elif not isinstance(DEFAULT_TASK.get(key), bool): # Handle non-boolean overrides
                  config[key] = args_dict[key]
 
-    # Handle query file argument - overrides default and task config query
-    if args.query_file:
-        if not os.path.exists(args.query_file):
-            print(f"Error: Query file '{args.query_file}' not found.")
-            sys.exit(1)
-        try:
-            with open(args.query_file, 'r') as f:
-                config['query'] = f.read().strip()
-        except IOError:
-            print(f"Error: Could not read query file '{args.query_file}'")
-            sys.exit(1)
-
     # Handle guidelines file argument - overrides default, task config, and query file
     if args.guidelines_file:
         if not os.path.exists(args.guidelines_file):
@@ -170,10 +158,6 @@ def load_task_config(args):
             print(f"Error: Could not read guidelines file '{args.guidelines_file}'")
             sys.exit(1)
 
-    # Handle the query argument separately as it's positional - overrides query file
-    if args.query:
-        config['query'] = args.query
-
     # Handle output folder argument - overrides default, task config, query file, and guidelines file
     if args.output_folder:
         config['output_folder'] = args.output_folder
@@ -190,6 +174,44 @@ def load_task_config(args):
     if args.publish_docx is not None:
         config['publish_formats']['docx'] = args.publish_docx
 
+    # Collect and concatenate query parts from command line arguments in order
+    all_query_parts = []
+    i = 1 # Start from the second element (index 1) to skip the script name
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == "--query":
+            if i + 1 < len(sys.argv):
+                all_query_parts.append(sys.argv[i+1])
+                i += 1 # Skip the value
+            else:
+                print("Error: --query requires a value.")
+                sys.exit(1)
+        elif arg == "--query-file":
+            if i + 1 < len(sys.argv):
+                file_path = sys.argv[i+1]
+                if not os.path.exists(file_path):
+                    print(f"Error: Query file '{file_path}' not found.")
+                    sys.exit(1)
+                try:
+                    with open(file_path, 'r') as f:
+                        all_query_parts.append(f.read().strip())
+                except IOError:
+                    print(f"Error: Could not read query file '{file_path}'")
+                    sys.exit(1)
+                i += 1 # Skip the file path
+            else:
+                print("Error: --query-file requires a file path.")
+                sys.exit(1)
+        # Add checks for other arguments if necessary to skip their values
+        # For now, assuming other arguments are handled by argparse and don't need special skipping here
+        # If an argument takes multiple values (like --guidelines), this simple skipping might not be sufficient
+        # However, since we are only concerned with --query and --query-file order here, this should be okay.
+        i += 1 # Move to the next argument
+
+    # If command line arguments for query were provided, concatenate them
+    if all_query_parts:
+        config['query'] = " ".join(all_query_parts)
+    # If no command line query arguments, the query from task config or default will be used
 
     return config
 
@@ -197,13 +219,13 @@ async def main():
     parser = argparse.ArgumentParser(description="Multi-agent research CLI")
 
     # Positional argument for the query
-    parser.add_argument("--query", type=str, help="The research query (optional if provided in task config or query file).")
+    parser.add_argument("--query", nargs='*', type=str, help="The research query (optional if provided in task config or query file). Can be provided multiple times and will be concatenated.")
 
     # Optional argument for a task configuration file
     parser.add_argument("--task-config", type=str, help="Path to a task configuration JSON file.")
 
     # Optional argument for a query file
-    parser.add_argument("--query-file", type=str, help="Path to a file containing the research query.")
+    parser.add_argument("--query-file", nargs='*', type=str, help="Path to a file containing the research query. Can be provided multiple times and will be concatenated.")
 
     # Optional argument for guidelines file
     parser.add_argument("--guidelines-file", type=str, help="Path to a file containing the research guidelines.")
